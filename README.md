@@ -46,8 +46,8 @@ Requirements: Google Play services on the phone (global ColorOS builds have it),
 from the same build (they must share a signing key).
 
 Installing `Halo-Watch-1.3.0.apk` on a Galaxy Watch:
-1. On the watch: **Settings → About watch → Software information**, tap **Software version** 7
-   times to unlock Developer options.
+1. On the watch: **Settings → About watch → Software information**, tap **Software version** repeatedly
+   until it confirms Developer mode is on.
 2. **Settings → Developer options**: turn on **ADB debugging** and **Wireless debugging**, and note
    the IP address and port shown.
 3. From a computer on the same Wi-Fi: `adb connect <ip>:<port>` then
