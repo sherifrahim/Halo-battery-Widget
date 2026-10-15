@@ -1,0 +1,5 @@
+<resources>
+    <item name="widget_bg_glass" type="drawable">@drawable/widget_bg_glass_light</item>
+    <item name="widget_bg_solid" type="drawable">@drawable/widget_bg_solid_light</item>
+    <item name="widget_tile" type="drawable">@drawable/widget_tile_light</item>
+</resources>

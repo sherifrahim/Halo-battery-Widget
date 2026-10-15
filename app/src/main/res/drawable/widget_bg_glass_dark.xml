@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fluid Fusion surface: tinted glass, two soft light blooms and a hairline edge highlight. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <gradient android:angle="315" android:startColor="#D91A1D26" android:endColor="#CC0B0D12" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <gradient android:type="radial" android:centerX="0.0" android:centerY="0.0"
+                android:gradientRadius="240dp" android:startColor="#3D2FE6A6" android:endColor="#00000000" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <gradient android:type="radial" android:centerX="1.0" android:centerY="1.0"
+                android:gradientRadius="220dp" android:startColor="#302BC8FF" android:endColor="#00000000" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <stroke android:width="1dp" android:color="#2EFFFFFF" />
+        </shape>
+    </item>
+</layer-list>

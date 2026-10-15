@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg_glass"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <TextView style="@style/WidgetPreviewCell" android:drawableTop="@drawable/ic_earbud_left" android:text="85%" />
+    <TextView style="@style/WidgetPreviewCell" android:drawableTop="@drawable/ic_earbud_right" android:text="80%" />
+    <TextView style="@style/WidgetPreviewCell" android:drawableTop="@drawable/ic_case" android:text="42%" />
+    <TextView style="@style/WidgetPreviewCell" android:drawableTop="@drawable/ic_watch" android:text="67%" />
+</LinearLayout>
