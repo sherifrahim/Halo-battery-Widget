@@ -52,7 +52,7 @@ class HaloStore private constructor(context: Context) {
 
     private fun readSettings(p: Preferences) = Settings(
         theme = enumOr(p[THEME], ThemeMode.SYSTEM),
-        surface = enumOr(p[SURFACE], SurfaceStyle.GLASS),
+        surface = enumOr(p[SURFACE], SurfaceStyle.SOLID),
         accent = enumOr(p[ACCENT], AccentStyle.FLUID),
         showPhone = p[SHOW_PHONE] ?: true,
         showRecent = p[SHOW_RECENT] ?: true,

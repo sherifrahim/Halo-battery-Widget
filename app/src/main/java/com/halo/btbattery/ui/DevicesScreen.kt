@@ -190,7 +190,7 @@ private fun PhoneCard(phone: PhoneBattery?, connectedCount: Int, accent: AccentS
     val charging = phone?.charging == true
     GlassCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Ring(phone?.level, levelColors(phone?.level, charging, accent), size = 96.dp, stroke = 9.dp, charging = charging) {
+            Ring(phone?.level, levelColors(phone?.level, charging, accent), size = 96.dp, stroke = 6.dp, charging = charging) {
                 Icon(painterResource(R.drawable.ic_phone), null, Modifier.size(30.dp), tint = t.ink)
             }
             Spacer(Modifier.width(20.dp))
@@ -240,7 +240,7 @@ private fun BudColumn(label: String, @DrawableRes icon: Int, cell: Cell?, connec
     val stale = !connected || cell == null || cell.isStale(now)
     val charging = cell?.charging == true && connected
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Ring(cell?.level, levelColors(cell?.level, charging, accent), size = 82.dp, stroke = 7.dp, dimmed = stale, charging = charging) {
+        Ring(cell?.level, levelColors(cell?.level, charging, accent), size = 80.dp, stroke = 5.dp, dimmed = stale, charging = charging) {
             Icon(painterResource(icon), label, Modifier.size(30.dp), tint = if (stale) t.inkSoft else t.ink)
         }
         Spacer(Modifier.height(10.dp))

@@ -52,6 +52,18 @@
                 android:resource="@xml/halo_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".widget.SelectedWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_selected_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/halo_selected_widget_info" />
+        </receiver>
+
         <!-- ACL connect/disconnect are exempt from the implicit-broadcast limits, so these
              reach us even when the app is not running. -->
         <receiver

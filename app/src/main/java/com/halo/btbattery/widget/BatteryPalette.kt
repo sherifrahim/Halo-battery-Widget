@@ -5,15 +5,16 @@ import android.os.Build
 import com.halo.btbattery.model.AccentStyle
 
 /**
- * Level colours, shared by widget and app. Solid system tones (each as a light→base pair for a
- * subtle gloss), not neon: green while healthy or charging, amber at 20 %, red at 10 %.
+ * Level colours, shared by widget and app: green while healthy or charging, amber at 20 %,
+ * red at 10 %. Each is a start/end pair so a custom accent can still use a gradient.
  */
 object BatteryPalette {
-    const val GREEN_A = 0xFF52DB8C.toInt()
-    const val GREEN_B = 0xFF22C063.toInt()
-    const val AMBER_A = 0xFFFFBE4D.toInt()
+    // Solid tones, as ColorOS draws its device rings (green sampled from the system widget).
+    const val GREEN_A = 0xFF26B235.toInt()
+    const val GREEN_B = 0xFF26B235.toInt()
+    const val AMBER_A = 0xFFFF9500.toInt()
     const val AMBER_B = 0xFFFF9500.toInt()
-    const val RED_A = 0xFFFF7A70.toInt()
+    const val RED_A = 0xFFFF3B30.toInt()
     const val RED_B = 0xFFFF3B30.toInt()
     const val UNKNOWN = 0xFFA0A4AB.toInt()
 

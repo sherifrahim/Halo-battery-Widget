@@ -21,7 +21,8 @@ import com.halo.btbattery.model.ThemeMode
 import com.halo.btbattery.ui.HaloScreen
 import com.halo.btbattery.ui.MainViewModel
 import com.halo.btbattery.ui.theme.HaloTheme
-import com.halo.btbattery.widget.WidgetRoot
+import com.halo.btbattery.widget.OverviewRoot
+import com.halo.btbattery.widget.SelectedRoot
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
@@ -66,9 +67,9 @@ class PreviewScreenshots {
     @Test fun styleDark() = app(ThemeMode.DARK, "style_dark", page = 1)
 
     @OptIn(ExperimentalGlanceRemoteViewsApi::class)
-    private fun widget(size: DpSize, theme: ThemeMode, name: String): Unit = runBlocking {
+    private fun widget(size: DpSize, theme: ThemeMode, name: String, selected: Boolean = false): Unit = runBlocking {
         val settings = Settings(theme = theme)
-        val result = GlanceRemoteViews().compose(app, size) { WidgetRoot(SampleData.snapshot, settings) }
+        val result = GlanceRemoteViews().compose(app, size) { if (selected) SelectedRoot(SampleData.snapshot, settings) else OverviewRoot(SampleData.snapshot, settings) }
         val host = FrameLayout(app)
         val view = result.remoteViews.apply(app, host)
         val density = app.resources.displayMetrics.density
@@ -76,7 +77,7 @@ class PreviewScreenshots {
         val h = (size.height.value * density).toInt()
         // Backdrop standing in for a wallpaper so the glass reads as glass.
         val frame = FrameLayout(app).apply {
-            setBackgroundColor(if (theme == ThemeMode.DARK) 0xFF2A3550.toInt() else 0xFFB9C9E0.toInt())
+            setBackgroundColor(if (theme == ThemeMode.DARK) 0xFF1F1F1F.toInt() else 0xFFC9D3E0.toInt())
             setPadding(40, 40, 40, 40)
             addView(view, FrameLayout.LayoutParams(w, h))
         }
@@ -103,11 +104,16 @@ class PreviewScreenshots {
         java.io.FileOutputStream("$OUT/launcher_icon.png").use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
 
+    @Test fun selected2x2Dark() = widget(DpSize(170.dp, 170.dp), ThemeMode.DARK, "selected_2x2_dark", selected = true)
+    @Test fun selected4x2Dark() = widget(DpSize(350.dp, 170.dp), ThemeMode.DARK, "selected_4x2_dark", selected = true)
+    @Test fun selected2x2Light() = widget(DpSize(170.dp, 170.dp), ThemeMode.LIGHT, "selected_2x2_light", selected = true)
+    @Test fun widget2x1Dark() = widget(DpSize(170.dp, 70.dp), ThemeMode.DARK, "widget_2x1_dark")
+
     @Test fun widget2x2Dark() = widget(DpSize(170.dp, 170.dp), ThemeMode.DARK, "widget_2x2_dark")
     @Test fun widget2x2Light() = widget(DpSize(170.dp, 170.dp), ThemeMode.LIGHT, "widget_2x2_light")
     @Test fun widget4x1Dark() = widget(DpSize(340.dp, 80.dp), ThemeMode.DARK, "widget_4x1_dark")
-    @Test fun widget4x2Dark() = widget(DpSize(340.dp, 170.dp), ThemeMode.DARK, "widget_4x2_dark")
-    @Test fun widget4x2Light() = widget(DpSize(340.dp, 170.dp), ThemeMode.LIGHT, "widget_4x2_light")
+    @Test fun widget4x2Dark() = widget(DpSize(350.dp, 170.dp), ThemeMode.DARK, "widget_4x2_dark")
+    @Test fun widget4x2Light() = widget(DpSize(350.dp, 170.dp), ThemeMode.LIGHT, "widget_4x2_light")
     @Test fun widget4x4Dark() = widget(DpSize(340.dp, 340.dp), ThemeMode.DARK, "widget_4x4_dark")
     @Test fun widget4x4Light() = widget(DpSize(340.dp, 340.dp), ThemeMode.LIGHT, "widget_4x4_light")
 }

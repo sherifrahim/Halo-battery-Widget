@@ -19,6 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +44,6 @@ import com.halo.btbattery.model.Settings
 import com.halo.btbattery.model.Snapshot
 import com.halo.btbattery.model.SurfaceStyle
 import com.halo.btbattery.model.ThemeMode
-import com.halo.btbattery.ui.components.BigPercent
 import com.halo.btbattery.ui.components.FluidSwitch
 import com.halo.btbattery.ui.components.GlassCard
 import com.halo.btbattery.ui.components.IconWell
@@ -84,7 +87,7 @@ fun StyleScreen(vm: MainViewModel) {
                 }, Modifier.fillMaxWidth())
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Resize freely: 2×1, 2×2, 4×2, or 4×3 and larger for the full list.",
+                    "Two widgets: Device overview and Selected device. Both resize freely.",
                     fontSize = 12.sp, color = t.inkSoft, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -150,25 +153,49 @@ fun StyleScreen(vm: MainViewModel) {
     }
 }
 
-/** A small live preview drawn like the 4×2 widget. */
+/** Live replica of the 4×2 "Device overview" widget, in the widget's own colours. */
 @Composable
 private fun WidgetPreview(snapshot: Snapshot, settings: Settings) {
     val context = LocalContext.current
     val t = LocalTones.current
-    val gauges = WidgetModel.gauges(WidgetModel.rows(context, snapshot, settings)).take(4)
-    if (gauges.isEmpty()) {
-        Text("Your accessories will appear here", fontSize = 13.sp, color = t.inkSoft, modifier = Modifier.padding(vertical = 24.dp))
-        return
-    }
-    Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-        gauges.forEach { g ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Ring(g.level, levelColors(g.level, g.charging, settings.accent), size = 62.dp, stroke = 7.dp, dimmed = g.stale, charging = g.charging) {
-                    Icon(painterResource(g.icon), g.label, Modifier.size(24.dp), tint = if (g.stale) t.inkSoft else t.ink)
+    val dark = when (settings.theme) { ThemeMode.DARK -> true; ThemeMode.LIGHT -> false; ThemeMode.SYSTEM -> t.dark }
+    val container = if (dark) Color(0xFF373737) else Color(0xFFF1F1F3)
+    val tile = if (dark) Color(0xFF474747) else Color.White
+    val title = if (dark) Color(0xFFEEEEEE) else Color(0xFF1A1A1A)
+    val sub = if (dark) Color(0xFFAAAAAA) else Color(0xFF8A8A8E)
+    val rows = WidgetModel.rows(context, snapshot, settings).take(4)
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(container).padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (rows.isEmpty()) {
+            Text("Your accessories will appear here", fontSize = 13.sp, color = sub, modifier = Modifier.padding(24.dp))
+        }
+        rows.chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                pair.forEach { row ->
+                    val g = if (row.gauges.size > 1) row.gauges.take(2).filter { it.level != null }.minByOrNull { it.level!! } ?: row.gauges.first() else row.gauges.first()
+                    Row(
+                        Modifier.weight(1f).height(64.dp).clip(RoundedCornerShape(16.dp)).background(tile).padding(start = 9.dp, end = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Ring(g.level, levelColors(g.level, g.charging, settings.accent), size = 44.dp, stroke = 3.dp, dimmed = g.stale) {
+                            Icon(painterResource(row.icon), null, Modifier.size(21.dp), tint = title)
+                        }
+                        Spacer(Modifier.width(9.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(row.title, fontSize = 13.sp, color = title, maxLines = 2, lineHeight = 16.sp)
+                            Text(
+                                when {
+                                    row.gauges.size > 1 -> listOfNotNull(
+                                        row.gauges[0].level?.let { "Ⓛ$it" }, row.gauges[1].level?.let { "Ⓡ$it" },
+                                    ).joinToString("  ")
+                                    g.level == null -> "Connected"
+                                    else -> "Battery: ${g.level}%"
+                                },
+                                fontSize = 11.sp, color = sub, maxLines = 1,
+                            )
+                        }
+                    }
                 }
-                Spacer(Modifier.height(8.dp))
-                BigPercent(g.level, 16.sp, if (g.stale) t.inkSoft else t.ink, charging = g.charging)
-                Text(g.label, fontSize = 11.sp, color = t.inkSoft, maxLines = 1)
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
         }
     }

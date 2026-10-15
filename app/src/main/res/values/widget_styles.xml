@@ -1,13 +1,14 @@
 <resources>
-    <style name="WidgetPreviewCell">
+    <style name="WidgetPreviewTile">
         <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_height">match_parent</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:gravity">center</item>
-        <item name="android:drawablePadding">6dp</item>
-        <item name="android:drawableTint">#FF22C063</item>
+        <item name="android:background">@drawable/widget_tile</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:drawablePadding">10dp</item>
+        <item name="android:drawableTint">#FF26B235</item>
         <item name="android:textColor">@color/widget_text</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">13sp</item>
     </style>
 </resources>

@@ -4,32 +4,35 @@ An Android widget + app that shows the battery of your connected Bluetooth gear:
 (**left, right and case separately**), headphones, speakers, watches, keyboards, mice and
 controllers. Car head units are filtered out.
 
-Designed to sit natively on ColorOS 17: a neutral canvas with one restrained accent,
-translucent cards lit from above (bright top hairline, soft bottom reflection, faint base
-shadow), a light bloom where your finger presses, fully circular controls, capsule buttons, a
-floating tab bar, bold battery bars, and the system font (OPPO Sans on ColorOS). Glow is
-reserved for charging.
+Built to match ColorOS 17's own **My Devices** widgets: the colours, ring style, L/R badges and
+layouts were sampled from the system widgets. The app around it follows ColorOS 17 too: neutral
+glass cards lit from above, a touch-point light bloom, circular controls, the system blue accent,
+a floating tab bar, and the system font (OPPO Sans on ColorOS).
 
-| Widget 4×2 | Widget 4×4 | Widget 2×2 |
-|---|---|---|
-| ![](dist/previews/widget_4x2_dark.png) | ![](dist/previews/widget_4x4_light.png) | ![](dist/previews/widget_2x2_light.png) |
+### Widgets
+Two widgets, each freely resizable:
 
-| App | App (dark) | Style |
+**Device overview**: a tile per accessory.
+
+| 4×2 | 2×2 | 2×1 |
 |---|---|---|
-| ![](dist/previews/app_light.png) | ![](dist/previews/app_dark.png) | ![](dist/previews/style_light.png) |
+| ![](dist/previews/widget_4x2_dark.png) | ![](dist/previews/widget_2x2_dark.png) | ![](dist/previews/widget_2x1_dark.png) |
+
+**Selected device**: one accessory up close (earbuds first, then whatever is connected).
+
+| 4×2 | 2×2 | 2×2 light |
+|---|---|---|
+| ![](dist/previews/selected_4x2_dark.png) | ![](dist/previews/selected_2x2_dark.png) | ![](dist/previews/selected_2x2_light.png) |
+
+### App
+| Devices | Devices (light) | Style |
+|---|---|---|
+| ![](dist/previews/app_dark.png) | ![](dist/previews/app_light.png) | ![](dist/previews/style_dark.png) |
 
 ## Install
-`dist/Halo-1.1.0.apk`: sideload it (allow "Install unknown apps"). Open Halo once, grant
-**Nearby devices**, then long-press the home screen → Widgets → Halo (or tap *Place on home screen*
+Download the APK from [Releases](https://github.com/sherifrahim/Halo-battery-Widget/releases/latest) (also at `dist/Halo-1.2.0.apk`) and sideload it (allow "Install unknown apps"). Open Halo once, grant
+**Nearby devices**, then long-press the home screen → Widgets → Halo (or tap *Add to home screen*
 in the Style tab).
-
-## Widget sizes
-| Size | Layout |
-|---|---|
-| 2×1 / 4×1 | ring pills with percentages |
-| 2×2 | up to four rings, number inside |
-| 4×2 | ring row with labels + refresh |
-| 4×3 and up | glass tile per device; earbuds show L / R / Case |
 
 ## Where the numbers come from
 | Device | Source |
@@ -63,6 +66,8 @@ The release build is signed with the debug key so it installs directly. Add your
 Icons: [Material Symbols Rounded](https://github.com/google/material-design-icons) (Apache 2.0).
 
 ## Limits worth knowing
+* The Selected device widget can't show a photo of your exact model, as ColorOS does, because
+  Bluetooth doesn't report the model. Earbuds get a rendered case; other devices a large icon.
 * Samsung Galaxy Buds and some brand-only earbuds use private protocols. They show the single
   Android level, not per-bud values.
 * Android's battery and connection checks call two hidden `BluetoothDevice` methods by name.

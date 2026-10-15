@@ -2,4 +2,7 @@
     <item name="widget_bg_glass" type="drawable">@drawable/widget_bg_glass_dark</item>
     <item name="widget_bg_solid" type="drawable">@drawable/widget_bg_solid_dark</item>
     <item name="widget_tile" type="drawable">@drawable/widget_tile_dark</item>
+    <item name="widget_top" type="drawable">@drawable/widget_top_dark</item>
+    <item name="widget_chip" type="drawable">@drawable/widget_chip_dark</item>
+    <item name="widget_badge" type="drawable">@drawable/widget_badge_dark</item>
 </resources>

@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Halo</string>
-    <string name="widget_name">Halo · Bluetooth battery</string>
-    <string name="widget_description">Battery for your earbuds, case, headphones, speakers and watch</string>
+    <string name="widget_name">Device overview</string>
+    <string name="widget_selected_name">Selected device</string>
+    <string name="widget_description">View multiple devices in one place</string>
+    <string name="widget_selected_description">View a single device: earbuds, case, headphones or watch</string>
     <string name="channel_live">Live battery updates</string>
 </resources>

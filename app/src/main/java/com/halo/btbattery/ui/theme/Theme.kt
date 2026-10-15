@@ -20,7 +20,9 @@ object Fluid {
     val GreenLight = Color(0xFF52DB8C)
     val Amber = Color(0xFFFF9500)
     val Red = Color(0xFFFF3B30)
-    val Blue = Color(0xFF4C8DFF)
+    /** ColorOS system accent (sampled from the system "Add" button). */
+    val Blue = Color(0xFF198CFF)
+    val Violet = Color(0xFF8C6CFF)
 }
 
 /**
@@ -77,7 +79,7 @@ private val Dark = FluidTones(
 )
 
 val LocalTones = staticCompositionLocalOf { Dark }
-val LocalAccent = staticCompositionLocalOf { Fluid.Green }
+val LocalAccent = staticCompositionLocalOf { Fluid.Blue }
 
 // The system font: on ColorOS this resolves to OPPO Sans, so text matches the rest of the phone.
 private val HaloType = Typography(
@@ -90,7 +92,7 @@ private val HaloType = Typography(
 )
 
 @Composable
-fun HaloTheme(mode: ThemeMode, accent: Color = Fluid.Green, content: @Composable () -> Unit) {
+fun HaloTheme(mode: ThemeMode, accent: Color = Fluid.Blue, content: @Composable () -> Unit) {
     val dark = when (mode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false

@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
             val accent = Color(BatteryPalette.healthy(this, settings.accent).second)
-                .takeIf { settings.accent == AccentStyle.WALLPAPER } ?: Fluid.Green
+                .takeIf { settings.accent == AccentStyle.WALLPAPER } ?: Fluid.Blue
             HaloTheme(settings.theme, accent) {
                 val dark = LocalTones.current.dark
                 LaunchedEffect(dark) {

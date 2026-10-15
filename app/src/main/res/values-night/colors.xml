@@ -1,4 +1,4 @@
 <resources>
     <color name="halo_bg">#FF07090D</color>
-    <color name="widget_text">#FFFFFFFF</color>
+    <color name="widget_text">#FFEEEEEE</color>
 </resources>

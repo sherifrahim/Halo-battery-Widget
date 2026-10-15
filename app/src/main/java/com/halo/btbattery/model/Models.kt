@@ -66,12 +66,12 @@ data class Snapshot(
 )
 
 enum class ThemeMode(val label: String) { SYSTEM("Auto"), LIGHT("Light"), DARK("Dark") }
-enum class SurfaceStyle(val label: String) { GLASS("Glass"), SOLID("Solid") }
+enum class SurfaceStyle(val label: String) { SOLID("Solid"), GLASS("Translucent") }
 enum class AccentStyle(val label: String) { FLUID("Green"), WALLPAPER("Wallpaper"), MONO("Mono") }
 
 data class Settings(
     val theme: ThemeMode = ThemeMode.SYSTEM,
-    val surface: SurfaceStyle = SurfaceStyle.GLASS,
+    val surface: SurfaceStyle = SurfaceStyle.SOLID,
     val accent: AccentStyle = AccentStyle.FLUID,
     val showPhone: Boolean = true,
     val showRecent: Boolean = true,

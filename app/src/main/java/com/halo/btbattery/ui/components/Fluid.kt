@@ -195,12 +195,12 @@ fun AmbientBackdrop(modifier: Modifier = Modifier) {
     val k by breathe.animateFloat(0f, 1f, infiniteRepeatable(tween(9_000, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "k")
     Canvas(modifier.fillMaxSize().background(t.base)) {
         val w = size.width
-        val strength = if (t.dark) 0.20f else 0.16f
+        val strength = if (t.dark) 0.16f else 0.12f
         fun bloom(color: Color, center: Offset, radius: Float) = drawCircle(
             Brush.radialGradient(listOf(color.copy(alpha = strength), Color.Transparent), center, radius), radius, center,
         )
         bloom(accent, Offset(w * (0.15f + 0.08f * k), -w * 0.1f), w * 0.95f)
-        bloom(Fluid.Blue, Offset(w * (0.95f - 0.08f * k), w * 0.05f), w * 0.8f)
+        bloom(Fluid.Violet, Offset(w * (0.95f - 0.08f * k), w * 0.05f), w * 0.8f)
     }
 }
 

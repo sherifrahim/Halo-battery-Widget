@@ -3,13 +3,12 @@
     android:id="@android:id/background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg_glass"
-    android:gravity="center"
+    android:background="@drawable/widget_bg_solid"
     android:orientation="horizontal"
-    android:padding="16dp">
+    android:padding="8dp">
 
-    <TextView style="@style/WidgetPreviewCell" android:drawableTop="@drawable/ic_earbud_left" android:text="85%" />
-    <TextView style="@style/WidgetPreviewCell" android:drawableTop="@drawable/ic_earbud_right" android:text="80%" />
-    <TextView style="@style/WidgetPreviewCell" android:drawableTop="@drawable/ic_case" android:text="42%" />
-    <TextView style="@style/WidgetPreviewCell" android:drawableTop="@drawable/ic_watch" android:text="67%" />
+    <TextView style="@style/WidgetPreviewTile" android:layout_marginEnd="8dp"
+        android:drawableStart="@drawable/ic_earbuds" android:text="Earbuds\nL 85  R 80" />
+    <TextView style="@style/WidgetPreviewTile"
+        android:drawableStart="@drawable/ic_watch" android:text="Watch\nBattery: 67%" />
 </LinearLayout>
