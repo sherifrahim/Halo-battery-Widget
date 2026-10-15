@@ -24,7 +24,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -41,7 +43,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -103,10 +107,12 @@ fun DevicesScreen(vm: MainViewModel) {
     val recent = snapshot.devices.filter { !it.connected }
     val accent = settings.accent
 
-    PullToRefreshBox(isRefreshing = refreshing, onRefresh = vm::refresh, modifier = Modifier.fillMaxSize()) {
+    // Depth of field: the page softly blurs while the device sheet is up (Android 12+).
+    val depth by animateDpAsState(if (sheetFor != null) 14.dp else 0.dp, tween(320), label = "depth")
+    PullToRefreshBox(isRefreshing = refreshing, onRefresh = vm::refresh, modifier = Modifier.fillMaxSize().blur(depth)) {
         LazyColumn(
-            Modifier.fillMaxSize().statusBarsPadding(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 112.dp),
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 8.dp, bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { LargeTitle(refreshing, snapshot.updatedAt, vm::refresh) }
@@ -130,12 +136,12 @@ fun DevicesScreen(vm: MainViewModel) {
             }
             if (others.isNotEmpty()) {
                 item { SectionHeader("Connected") }
-                item { DeviceGroup(others, accent, settings.hidden) { sheetFor = it } }
+                item { DeviceGroup(others, accent, settings.hidden, snapshot.watchesWithoutApp.isNotEmpty()) { sheetFor = it } }
             }
             if (connected.isEmpty() && canConnect && snapshot.bluetoothOn) item { EmptyCard() }
             if (recent.isNotEmpty()) {
                 item { SectionHeader("Recently connected") }
-                item { DeviceGroup(recent, accent, settings.hidden) { sheetFor = it } }
+                item { DeviceGroup(recent, accent, settings.hidden, false) { sheetFor = it } }
             }
         }
     }
@@ -254,17 +260,17 @@ private fun BudColumn(label: String, @DrawableRes icon: Int, cell: Cell?, connec
 
 /** Grouped list card in the ColorOS settings style: rows separated by inset hairlines. */
 @Composable
-private fun DeviceGroup(devices: List<DeviceBattery>, accent: AccentStyle, hidden: Set<String>, onOpen: (String) -> Unit) {
+private fun DeviceGroup(devices: List<DeviceBattery>, accent: AccentStyle, hidden: Set<String>, watchAppMissing: Boolean, onOpen: (String) -> Unit) {
     GlassCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 6.dp)) {
         devices.forEachIndexed { i, d ->
-            DeviceRowItem(d, accent, d.address in hidden) { onOpen(d.address) }
+            DeviceRowItem(d, accent, d.address in hidden, watchAppMissing && d.type == DeviceType.WATCH && d.main == null) { onOpen(d.address) }
             if (i < devices.lastIndex) RowDivider()
         }
     }
 }
 
 @Composable
-private fun DeviceRowItem(d: DeviceBattery, accent: AccentStyle, hidden: Boolean, onClick: () -> Unit) {
+private fun DeviceRowItem(d: DeviceBattery, accent: AccentStyle, hidden: Boolean, needsWatchApp: Boolean, onClick: () -> Unit) {
     val t = LocalTones.current
     val now = System.currentTimeMillis()
     val cell = d.headline
@@ -281,7 +287,7 @@ private fun DeviceRowItem(d: DeviceBattery, accent: AccentStyle, hidden: Boolean
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(d.name, style = MaterialTheme.typography.titleMedium, color = t.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(statusLine(d, hidden), fontSize = 12.sp, color = t.inkSoft, maxLines = 1)
+                    Text(statusLine(d, hidden, needsWatchApp), fontSize = 12.sp, color = if (needsWatchApp) LocalAccent.current else t.inkSoft, maxLines = 2)
                 }
                 Spacer(Modifier.width(8.dp))
                 BigPercent(cell?.level, 20.sp, if (stale) t.inkSoft else t.ink, charging = charging)
@@ -292,9 +298,13 @@ private fun DeviceRowItem(d: DeviceBattery, accent: AccentStyle, hidden: Boolean
     }
 }
 
-private fun statusLine(d: DeviceBattery, hidden: Boolean): String {
+private fun statusLine(d: DeviceBattery, hidden: Boolean, needsWatchApp: Boolean = false): String {
     val parts = mutableListOf<String>()
-    parts += if (d.connected) "Connected" else "Last seen ${WidgetModel.ago(d.lastSeen)}"
+    parts += when {
+        !d.connected -> "Last seen ${WidgetModel.ago(d.lastSeen)}"
+        needsWatchApp -> "Install Halo on the watch to see its battery"
+        else -> "Connected"
+    }
     if (hidden) parts += "Hidden on widget"
     return parts.joinToString(" · ")
 }

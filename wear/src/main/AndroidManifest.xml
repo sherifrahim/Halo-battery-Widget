@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="Halo"
+        android:theme="@android:style/Theme.DeviceDefault">
+
+        <!-- Only useful alongside the Halo phone app. -->
+        <meta-data android:name="com.google.android.wearable.standalone" android:value="false" />
+
+        <activity
+            android:name=".StatusActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Woken by Google Play services when the phone asks for the battery level. -->
+        <service
+            android:name=".BatteryReplyService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/halo/battery/request" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

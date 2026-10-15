@@ -18,7 +18,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBars
+import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
@@ -87,15 +97,29 @@ private val tabs = listOf(Tab("Devices", R.drawable.ic_earbuds), Tab("Style", R.
 fun HaloScreen(vm: MainViewModel) {
     val pager = rememberPagerState(pageCount = { tabs.size })
     val scope = rememberCoroutineScope()
+    val t = LocalTones.current
+    val haze = remember { HazeState() }
     Box(Modifier.fillMaxSize()) {
-        AmbientBackdrop()
-        HorizontalPager(pager, Modifier.fillMaxSize()) { page ->
-            when (page) {
-                0 -> DevicesScreen(vm)
-                else -> StyleScreen(vm)
+        // Everything that can scroll under the bars is the blur source.
+        Box(Modifier.fillMaxSize().hazeSource(haze)) {
+            AmbientBackdrop()
+            HorizontalPager(pager, Modifier.fillMaxSize()) { page ->
+                when (page) {
+                    0 -> DevicesScreen(vm)
+                    else -> StyleScreen(vm)
+                }
             }
         }
+        // Progressive blur under the status bar: strongest at the top edge, fading out below.
+        val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        Box(
+            Modifier.fillMaxWidth().height(topInset + 36.dp).align(Alignment.TopCenter)
+                .hazeEffect(haze, HazeStyle(backgroundColor = t.base, tint = HazeTint(t.base.copy(alpha = 0.45f)), blurRadius = 18.dp, noiseFactor = 0f)) {
+                    progressive = HazeProgressive.verticalGradient(startIntensity = 1f, endIntensity = 0f)
+                },
+        )
         FloatingTabBar(
+            haze = haze,
             selected = pager.currentPage,
             onSelect = { scope.launch { pager.animateScrollToPage(it) } },
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 12.dp),
@@ -103,9 +127,9 @@ fun HaloScreen(vm: MainViewModel) {
     }
 }
 
-/** Floating, translucent capsule tab bar; the selection lozenge glides between tabs on a spring. */
+/** Floating frosted-glass capsule tab bar; the selection lozenge glides between tabs on a spring. */
 @Composable
-private fun FloatingTabBar(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+private fun FloatingTabBar(haze: HazeState, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val t = LocalTones.current
     val accent = LocalAccent.current
     val itemW = 92.dp
@@ -114,7 +138,16 @@ private fun FloatingTabBar(selected: Int, onSelect: (Int) -> Unit, modifier: Mod
         modifier
             .shadow(18.dp, CircleShape, ambientColor = Color(0x22000000), spotColor = Color(0x2E000000))
             .clip(CircleShape)
-            .background(t.bar)
+            // Frosted glass: the page blurred beneath, a light tint and fine grain on top.
+            .hazeEffect(
+                haze,
+                HazeStyle(
+                    backgroundColor = t.base,
+                    tint = HazeTint(if (t.dark) Color(0xB32A2A2D) else Color(0xB3FFFFFF)),
+                    blurRadius = 24.dp,
+                    noiseFactor = 0.05f,
+                ),
+            )
             .border(1.dp, Brush.verticalGradient(listOf(t.edgeTop, t.edgeBottom)), CircleShape)
             .padding(4.dp)
             .height(56.dp)

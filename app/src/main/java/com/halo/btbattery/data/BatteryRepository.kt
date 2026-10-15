@@ -10,6 +10,7 @@ import com.halo.btbattery.bt.DeviceClassifier
 import com.halo.btbattery.bt.GattBatteryReader
 import com.halo.btbattery.bt.Permissions
 import com.halo.btbattery.bt.SystemBluetooth
+import com.halo.btbattery.bt.WearBridge
 import com.halo.btbattery.model.Cell
 import com.halo.btbattery.model.DeviceBattery
 import com.halo.btbattery.model.DeviceType
@@ -83,14 +84,30 @@ object BatteryRepository {
             }
         }
 
-        // Standard battery service for BLE wearables that Android doesn't report.
+        // Wear OS watches: ask the Halo companion on the watch.
+        val wear = if (btOn) WearBridge.query(context) else WearBridge.Result(emptyList(), emptyList())
+        for (r in wear.readings) {
+            val cell = Cell(r.level, r.charging, now)
+            val i = live.indexOfFirst { WearBridge.sameDevice(it.name, r.name) }
+                .takeIf { it >= 0 }
+                ?: live.indexOfFirst { it.type == DeviceType.WATCH && Source.SYSTEM !in it.sources }.takeIf { it >= 0 }
+                ?: live.indexOfFirst { it.address == "wear:${r.nodeId}" }
+            if (i != null && i >= 0) {
+                live[i] = live[i].copy(type = settings.typeOverrides[live[i].address] ?: DeviceType.WATCH, main = cell, sources = live[i].sources + Source.WEAR)
+            } else {
+                // Connected only through the phone's Wear OS link, not shown as a Bluetooth device.
+                live += DeviceBattery("wear:${r.nodeId}", r.name, DeviceType.WATCH, connected = true, main = cell, sources = setOf(Source.WEAR), lastSeen = now)
+            }
+        }
+
+        // Standard battery service for BLE wearables (and dual-mode watches) Android doesn't report.
         for (i in live.indices) {
             val d = live[i]
             val device = handles[d.address] ?: continue
             val isLe = runCatching { device.type == BluetoothDevice.DEVICE_TYPE_LE }.getOrDefault(false)
-            val fresh = d.main != null && Source.SYSTEM in d.sources
+            val fresh = d.main != null && (Source.SYSTEM in d.sources || Source.WEAR in d.sources)
             val recentGatt = Source.GATT in d.sources && d.main != null && now - d.main.at < GATT_EVERY_MS
-            if (!isLe || fresh || d.hasBuds || recentGatt) continue
+            if (!(isLe || d.type == DeviceType.WATCH) || fresh || d.hasBuds || recentGatt) continue
             GattBatteryReader.read(context, device)?.let { level ->
                 live[i] = d.copy(main = Cell(level, at = now), sources = d.sources + Source.GATT)
             }
@@ -101,7 +118,7 @@ object BatteryRepository {
             .filter { it.address !in liveAddresses && now - it.lastSeen < FORGET_AFTER_MS }
             .map { it.copy(connected = false) }
 
-        store.saveSnapshot(Snapshot(live + offline, now, btOn, permissionMissing = false))
+        store.saveSnapshot(Snapshot(live + offline, now, btOn, permissionMissing = false, watchesWithoutApp = wear.withoutApp))
         HaloWidget.updateAll(context)
     }
 

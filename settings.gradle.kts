@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "HaloBattery"
 include(":app")
+include(":wear")

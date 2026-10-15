@@ -10,6 +10,14 @@ import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalSize
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
+import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.appwidget.cornerRadius
+import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.padding
+import com.halo.btbattery.ui.MainActivity
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -33,6 +41,7 @@ import androidx.glance.color.ColorProvider as DayNightColor
 
 /** Colours and surfaces sampled from the ColorOS 17 "My Devices" widgets. */
 internal class WidgetLook(
+    val frosted: Boolean,
     val title: ColorProvider,
     val subtitle: ColorProvider,
     val badgeText: ColorProvider,
@@ -50,7 +59,7 @@ private val TitleLight = Color(0xFF1A1A1A)
 private val SubLight = Color(0xFF8A8A8E)
 
 internal fun widgetLook(settings: Settings): WidgetLook {
-    val glass = settings.surface == SurfaceStyle.GLASS
+    val frosted = settings.surface == SurfaceStyle.GLASS
     fun pick(auto: Int, light: Int, dark: Int) = ImageProvider(
         when (settings.theme) { ThemeMode.SYSTEM -> auto; ThemeMode.LIGHT -> light; ThemeMode.DARK -> dark },
     )
@@ -60,17 +69,44 @@ internal fun widgetLook(settings: Settings): WidgetLook {
         ThemeMode.DARK -> ColorProvider(dark)
     }
     return WidgetLook(
+        frosted = frosted,
         title = color(TitleLight, TitleDark),
         subtitle = color(SubLight, SubDark),
         badgeText = color(Color.White, Color(0xFF474747)),
-        container = if (glass) pick(R.drawable.widget_bg_glass, R.drawable.widget_bg_glass_light, R.drawable.widget_bg_glass_dark)
+        container = if (frosted) pick(R.drawable.widget_frost, R.drawable.widget_frost_light, R.drawable.widget_frost_dark)
         else pick(R.drawable.widget_bg_solid, R.drawable.widget_bg_solid_light, R.drawable.widget_bg_solid_dark),
-        tile = pick(R.drawable.widget_tile, R.drawable.widget_tile_light, R.drawable.widget_tile_dark),
-        top = pick(R.drawable.widget_top, R.drawable.widget_top_light, R.drawable.widget_top_dark),
+        tile = if (frosted) pick(R.drawable.widget_tile_frost, R.drawable.widget_tile_frost_light, R.drawable.widget_tile_frost_dark)
+        else pick(R.drawable.widget_tile, R.drawable.widget_tile_light, R.drawable.widget_tile_dark),
+        top = if (frosted) pick(R.drawable.widget_top_frost, R.drawable.widget_top_frost_light, R.drawable.widget_top_frost_dark)
+        else pick(R.drawable.widget_top, R.drawable.widget_top_light, R.drawable.widget_top_dark),
         chip = pick(R.drawable.widget_chip, R.drawable.widget_chip_light, R.drawable.widget_chip_dark),
         badge = pick(R.drawable.widget_badge, R.drawable.widget_badge_light, R.drawable.widget_badge_dark),
         accent = settings.accent,
     )
+}
+
+/**
+ * The widget's outer surface. Frosted: a wash of the wallpaper's colours with the day/night frost
+ * tint over it. Solid: the flat system grey.
+ */
+@Composable
+internal fun WidgetSurface(
+    look: WidgetLook,
+    padding: Dp = 0.dp,
+    contentAlignment: Alignment = Alignment.TopStart,
+    content: @Composable () -> Unit,
+) {
+    val context = LocalContext.current
+    val size = LocalSize.current
+    val base = GlanceModifier.fillMaxSize().appWidgetBackground().cornerRadius(24.dp).clickable(actionStartActivity<MainActivity>())
+    if (look.frosted) {
+        val wash = FrostRenderer.wash(context, size.width.value, size.height.value)
+        Box(base.background(ImageProvider(wash))) {
+            Box(GlanceModifier.fillMaxSize().background(look.container).padding(padding), contentAlignment = contentAlignment) { content() }
+        }
+    } else {
+        Box(base.background(look.container).padding(padding), contentAlignment = contentAlignment) { content() }
+    }
 }
 
 /** Device icon inside its battery ring; a plain circle when the level is unknown. */
@@ -131,7 +167,7 @@ internal fun StatusLine(row: DeviceRow, look: WidgetLook, fontSp: Float) {
     when {
         row.gauges.size > 1 && row.connected -> BudsLine(row, look, fontSp, withCase = false)
         !row.connected -> Text(row.status, style = TextStyle(color = look.subtitle, fontSize = fontSp.sp), maxLines = 1)
-        g.level == null -> Text("Connected", style = TextStyle(color = look.subtitle, fontSize = fontSp.sp), maxLines = 1)
+        g.level == null -> Text(if (row.status.startsWith("Install")) row.status else "Connected", style = TextStyle(color = look.subtitle, fontSize = fontSp.sp), maxLines = 1)
         g.charging -> Text("Charging: ${g.level}%", style = TextStyle(color = look.subtitle, fontSize = fontSp.sp), maxLines = 1)
         else -> Text("Battery: ${g.level}%", style = TextStyle(color = look.subtitle, fontSize = fontSp.sp), maxLines = 1)
     }

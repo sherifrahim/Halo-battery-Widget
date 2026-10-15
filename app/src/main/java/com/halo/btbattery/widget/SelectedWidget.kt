@@ -89,14 +89,10 @@ internal fun SelectedRoot(snapshot: Snapshot, settings: Settings) {
     val rows = WidgetModel.rows(context, snapshot, settings.copy(showPhone = false))
     val row = rows.firstOrNull { it.key == device?.address }
 
-    Box(
-        GlanceModifier.fillMaxSize().appWidgetBackground().cornerRadius(24.dp).background(look.container)
-            .clickable(actionStartActivity<MainActivity>()),
-        contentAlignment = Alignment.Center,
-    ) {
+    WidgetSurface(look, contentAlignment = Alignment.Center) {
         if (device == null || row == null) {
             WidgetMessage(if (snapshot.permissionMissing) "Open Halo to allow Bluetooth" else "No devices connected", look)
-            return@Box
+            return@WidgetSurface
         }
         val wide = size.width.value >= 200
         Column(GlanceModifier.fillMaxSize()) {

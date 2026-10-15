@@ -34,10 +34,13 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 private const val OUT = "build/previews"
+private val WALLPAPER = listOf(0xFF22406E.toInt(), 0xFF6E2F55.toInt(), 0xFF1F5E5A.toInt())
+private val WALLPAPER_LIGHT = listOf(0xFF9DB8E6.toInt(), 0xFFE3B3CB.toInt(), 0xFFA6D9CF.toInt())
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w400dp-h880dp-xxhdpi", application = Application::class)
+// Android 12L: Robolectric's Skia can't compile the runtime shader Haze uses on 13+ (real devices can).
+@Config(sdk = [32], qualifiers = "w400dp-h880dp-xxhdpi", application = Application::class)
 class PreviewScreenshots {
     @get:Rule val compose = createComposeRule()
 
@@ -51,6 +54,7 @@ class PreviewScreenshots {
                 .putExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_DISCHARGING),
         )
         runBlocking { HaloStore.get(app).saveSnapshot(SampleData.snapshot) }
+        com.halo.btbattery.widget.WallpaperTint.override = WALLPAPER
     }
 
     private fun app(theme: ThemeMode, name: String, page: Int = 0) {
@@ -69,6 +73,7 @@ class PreviewScreenshots {
     @OptIn(ExperimentalGlanceRemoteViewsApi::class)
     private fun widget(size: DpSize, theme: ThemeMode, name: String, selected: Boolean = false): Unit = runBlocking {
         val settings = Settings(theme = theme)
+        com.halo.btbattery.widget.WallpaperTint.override = if (theme == ThemeMode.DARK) WALLPAPER else WALLPAPER_LIGHT
         val result = GlanceRemoteViews().compose(app, size) { if (selected) SelectedRoot(SampleData.snapshot, settings) else OverviewRoot(SampleData.snapshot, settings) }
         val host = FrameLayout(app)
         val view = result.remoteViews.apply(app, host)
@@ -77,7 +82,11 @@ class PreviewScreenshots {
         val h = (size.height.value * density).toInt()
         // Backdrop standing in for a wallpaper so the glass reads as glass.
         val frame = FrameLayout(app).apply {
-            setBackgroundColor(if (theme == ThemeMode.DARK) 0xFF1F1F1F.toInt() else 0xFFC9D3E0.toInt())
+            // A sample wallpaper; the frosted widget is tinted from the same colours, as on a phone.
+            background = android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                if (theme == ThemeMode.DARK) WALLPAPER.toIntArray() else WALLPAPER_LIGHT.toIntArray(),
+            )
             setPadding(40, 40, 40, 40)
             addView(view, FrameLayout.LayoutParams(w, h))
         }

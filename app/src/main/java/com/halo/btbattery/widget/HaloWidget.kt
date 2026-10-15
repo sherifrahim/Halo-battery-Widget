@@ -99,16 +99,7 @@ internal fun OverviewRoot(snapshot: Snapshot, settings: Settings) {
     val look = widgetLook(settings)
     val rows = WidgetModel.rows(context, snapshot, settings)
 
-    Box(
-        GlanceModifier
-            .fillMaxSize()
-            .appWidgetBackground()
-            .cornerRadius(24.dp)
-            .background(look.container)
-            .clickable(actionStartActivity<MainActivity>())
-            .padding(PAD.dp),
-        contentAlignment = Alignment.Center,
-    ) {
+    WidgetSurface(look, padding = PAD.dp, contentAlignment = Alignment.Center) {
         val message = when {
             snapshot.permissionMissing -> "Open Halo to allow Bluetooth"
             !snapshot.bluetoothOn && rows.isEmpty() -> "Bluetooth is off"

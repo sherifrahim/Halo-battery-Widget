@@ -79,3 +79,18 @@ class AdParsersTest {
         assertNull(AppleProximityParser.parse(d))
     }
 }
+
+class WearBridgeTest {
+    @Test fun payloadRoundTrip() {
+        org.junit.Assert.assertEquals(67 to true, WearBridge.parse(WearBridge.encode(67, true)))
+        org.junit.Assert.assertEquals(5 to false, WearBridge.parse("5,0".toByteArray()))
+        org.junit.Assert.assertNull(WearBridge.parse("abc".toByteArray()))
+        org.junit.Assert.assertNull(WearBridge.parse("140,1".toByteArray()))
+    }
+
+    @Test fun watchNamesMatch() {
+        org.junit.Assert.assertTrue(WearBridge.sameDevice("Galaxy Watch7 (A1B2)", "Galaxy Watch7 (A1B2) LE"))
+        org.junit.Assert.assertTrue(WearBridge.sameDevice("Galaxy Watch7 (A1B2)", "galaxy watch7 (a1b2)"))
+        org.junit.Assert.assertFalse(WearBridge.sameDevice("Galaxy Watch7 (A1B2)", "Pixel Watch 3"))
+    }
+}

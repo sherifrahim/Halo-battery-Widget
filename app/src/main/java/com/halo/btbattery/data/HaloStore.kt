@@ -52,7 +52,7 @@ class HaloStore private constructor(context: Context) {
 
     private fun readSettings(p: Preferences) = Settings(
         theme = enumOr(p[THEME], ThemeMode.SYSTEM),
-        surface = enumOr(p[SURFACE], SurfaceStyle.SOLID),
+        surface = enumOr(p[SURFACE], SurfaceStyle.GLASS),
         accent = enumOr(p[ACCENT], AccentStyle.FLUID),
         showPhone = p[SHOW_PHONE] ?: true,
         showRecent = p[SHOW_RECENT] ?: true,
@@ -130,6 +130,7 @@ private fun encodeSnapshot(s: Snapshot): String {
         .put("updated", s.updatedAt)
         .put("bt", s.bluetoothOn)
         .put("perm", s.permissionMissing)
+        .put("noapp", JSONArray(s.watchesWithoutApp))
         .toString()
 }
 
@@ -153,5 +154,6 @@ private fun decodeSnapshot(raw: String): Snapshot {
             lastSeen = d.optLong("seen"),
         )
     }
-    return Snapshot(devices, o.optLong("updated"), o.optBoolean("bt", true), o.optBoolean("perm"))
+    val noApp = o.optJSONArray("noapp")?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty()
+    return Snapshot(devices, o.optLong("updated"), o.optBoolean("bt", true), o.optBoolean("perm"), noApp)
 }

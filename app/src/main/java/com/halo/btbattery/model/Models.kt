@@ -23,6 +23,7 @@ enum class Source(val label: String) {
     FAST_PAIR("Fast Pair"),
     APPLE("AirPods"),
     GATT("Battery service"),
+    WEAR("Halo on watch"),
 }
 
 /** One battery: a level (0–100), whether it is charging, and when it was read. */
@@ -63,15 +64,17 @@ data class Snapshot(
     val updatedAt: Long = 0L,
     val bluetoothOn: Boolean = true,
     val permissionMissing: Boolean = false,
+    /** Wear OS watches that are connected but don't have the Halo companion installed. */
+    val watchesWithoutApp: List<String> = emptyList(),
 )
 
 enum class ThemeMode(val label: String) { SYSTEM("Auto"), LIGHT("Light"), DARK("Dark") }
-enum class SurfaceStyle(val label: String) { SOLID("Solid"), GLASS("Translucent") }
+enum class SurfaceStyle(val label: String) { GLASS("Frosted"), SOLID("Solid") }
 enum class AccentStyle(val label: String) { FLUID("Green"), WALLPAPER("Wallpaper"), MONO("Mono") }
 
 data class Settings(
     val theme: ThemeMode = ThemeMode.SYSTEM,
-    val surface: SurfaceStyle = SurfaceStyle.SOLID,
+    val surface: SurfaceStyle = SurfaceStyle.GLASS,
     val accent: AccentStyle = AccentStyle.FLUID,
     val showPhone: Boolean = true,
     val showRecent: Boolean = true,

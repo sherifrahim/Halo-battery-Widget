@@ -41,13 +41,13 @@ object WidgetModel {
             .filter { it.address !in settings.hidden }
             .filter { it.connected || (settings.showRecent && it.headline != null) }
             .sortedWith(compareByDescending<DeviceBattery> { it.connected }.thenByDescending { it.lastSeen })
-        visible.forEach { rows += row(it, now) }
+        visible.forEach { rows += row(it, now, snapshot) }
         return rows
     }
 
     fun gauges(rows: List<DeviceRow>): List<Gauge> = rows.flatMap { it.gauges }
 
-    private fun row(d: DeviceBattery, now: Long): DeviceRow {
+    private fun row(d: DeviceBattery, now: Long, snapshot: Snapshot): DeviceRow {
         val offline = !d.connected
         fun gauge(suffix: String, label: String, icon: Int, cell: Cell?) = Gauge(
             key = d.address + suffix, label = label, icon = icon, level = cell?.level,
@@ -65,6 +65,7 @@ object WidgetModel {
         }
         val status = when {
             offline -> "Seen ${ago(d.lastSeen, now)}"
+            d.main == null && d.type == DeviceType.WATCH && snapshot.watchesWithoutApp.isNotEmpty() -> "Install Halo on watch"
             gauges.any { it.charging } -> "Charging"
             else -> "Connected"
         }

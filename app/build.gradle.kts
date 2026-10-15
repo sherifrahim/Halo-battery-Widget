@@ -12,8 +12,8 @@ android {
         applicationId = "com.halo.btbattery"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.3.0"
     }
 
     buildTypes {
@@ -59,6 +59,12 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
     implementation("androidx.glance:glance-appwidget:1.1.1")
+    // Backdrop blur for the floating tab bar and the progressive blur under the status bar.
+    implementation("dev.chrisbanes.haze:haze:1.2.2")
+    // Talks to the Halo companion on Wear OS watches (Galaxy Watch, Pixel Watch…), which don't
+    // report battery over Bluetooth.
+    implementation("com.google.android.gms:play-services-wearable:18.2.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
