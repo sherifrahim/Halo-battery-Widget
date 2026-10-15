@@ -6,7 +6,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -60,7 +59,8 @@ import androidx.glance.color.ColorProvider as DayNightColor
 
 class HaloWidget : GlanceAppWidget() {
 
-    override val sizeMode = SizeMode.Responsive(setOf(TINY, STRIP, SQUARE, WIDE, TALL))
+    // Exact: layouts get the real size, so rings and bars scale with however big the widget is.
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val store = HaloStore.get(context)
@@ -74,12 +74,6 @@ class HaloWidget : GlanceAppWidget() {
     }
 
     companion object {
-        val TINY = DpSize(100.dp, 48.dp)
-        val STRIP = DpSize(220.dp, 48.dp)
-        val SQUARE = DpSize(100.dp, 100.dp)
-        val WIDE = DpSize(220.dp, 100.dp)
-        val TALL = DpSize(220.dp, 200.dp)
-
         suspend fun updateAll(context: Context) {
             runCatching { HaloWidget().updateAll(context) }
         }
@@ -108,33 +102,35 @@ private class WidgetLook(
     val text: ColorProvider,
     val subtle: ColorProvider,
     val background: ImageProvider,
-    val tile: ImageProvider,
+    val chip: ImageProvider,
     val accent: AccentStyle,
 )
 
+private val Ink = Color(0xFF1A1A1A)
+private val Charge = Color(BatteryPalette.GREEN_B)
+
 private fun look(settings: Settings): WidgetLook {
-    val ink = Color(0xFF111318)
     val glass = settings.surface == SurfaceStyle.GLASS
     return when (settings.theme) {
         ThemeMode.SYSTEM -> WidgetLook(
-            text = DayNightColor(day = ink, night = Color.White),
-            subtle = DayNightColor(day = ink.copy(alpha = 0.55f), night = Color.White.copy(alpha = 0.6f)),
+            text = DayNightColor(day = Ink, night = Color.White),
+            subtle = DayNightColor(day = Ink.copy(alpha = 0.5f), night = Color.White.copy(alpha = 0.55f)),
             background = ImageProvider(if (glass) R.drawable.widget_bg_glass else R.drawable.widget_bg_solid),
-            tile = ImageProvider(R.drawable.widget_tile),
+            chip = ImageProvider(R.drawable.widget_tile),
             accent = settings.accent,
         )
         ThemeMode.LIGHT -> WidgetLook(
-            text = ColorProvider(ink),
-            subtle = ColorProvider(ink.copy(alpha = 0.55f)),
+            text = ColorProvider(Ink),
+            subtle = ColorProvider(Ink.copy(alpha = 0.5f)),
             background = ImageProvider(if (glass) R.drawable.widget_bg_glass_light else R.drawable.widget_bg_solid_light),
-            tile = ImageProvider(R.drawable.widget_tile_light),
+            chip = ImageProvider(R.drawable.widget_tile_light),
             accent = settings.accent,
         )
         ThemeMode.DARK -> WidgetLook(
             text = ColorProvider(Color.White),
-            subtle = ColorProvider(Color.White.copy(alpha = 0.6f)),
+            subtle = ColorProvider(Color.White.copy(alpha = 0.55f)),
             background = ImageProvider(if (glass) R.drawable.widget_bg_glass_dark else R.drawable.widget_bg_solid_dark),
-            tile = ImageProvider(R.drawable.widget_tile_dark),
+            chip = ImageProvider(R.drawable.widget_tile_dark),
             accent = settings.accent,
         )
     }
@@ -154,10 +150,10 @@ internal fun WidgetRoot(snapshot: Snapshot, settings: Settings) {
         modifier = GlanceModifier
             .fillMaxSize()
             .appWidgetBackground()
-            .cornerRadius(28.dp)
+            .cornerRadius(26.dp)
             .background(look.background)
             .clickable(actionStartActivity<MainActivity>())
-            .padding(horizontal = 12.dp, vertical = if (size.height < 90.dp) 6.dp else 12.dp),
+            .padding(horizontal = 14.dp, vertical = if (size.height < 90.dp) 8.dp else 14.dp),
         contentAlignment = Alignment.Center,
     ) {
         val message = when {
@@ -170,8 +166,8 @@ internal fun WidgetRoot(snapshot: Snapshot, settings: Settings) {
             message != null -> Message(message, look)
             size.height < 90.dp -> StripLayout(gauges, look)
             size.width < 200.dp -> SquareLayout(gauges, look)
-            size.height < 190.dp -> RingsLayout(gauges, snapshot, look)
-            else -> ListLayout(rows, snapshot, look)
+            size.height < 190.dp -> RingsLayout(gauges, look)
+            else -> ListLayout(rows, look)
         }
     }
 }
@@ -179,35 +175,58 @@ internal fun WidgetRoot(snapshot: Snapshot, settings: Settings) {
 @Composable
 private fun Message(text: String, look: WidgetLook) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalAlignment = Alignment.CenterVertically) {
-        Image(ImageProvider(R.drawable.ic_bluetooth), null, GlanceModifier.size(22.dp), colorFilter = ColorFilter.tint(look.subtle))
-        Spacer(GlanceModifier.height(6.dp))
+        Box(GlanceModifier.size(40.dp).background(look.chip), contentAlignment = Alignment.Center) {
+            Image(ImageProvider(R.drawable.ic_bluetooth), null, GlanceModifier.size(20.dp), colorFilter = ColorFilter.tint(look.text))
+        }
+        Spacer(GlanceModifier.height(8.dp))
         Text(text, style = TextStyle(color = look.subtle, fontSize = 12.sp, textAlign = TextAlign.Center), maxLines = 2)
     }
 }
 
-/** Ring with the device icon floating in the middle. */
+/** "78" with a smaller "%" sitting on the same baseline, and a bolt in front while charging. */
 @Composable
-private fun RingIcon(g: Gauge, ringDp: Dp, look: WidgetLook, iconRatio: Float = 0.42f) {
+private fun Percent(g: Gauge, size: Float, look: WidgetLook, weight: FontWeight = FontWeight.Medium, showBolt: Boolean = true) {
+    val color = if (g.stale) look.subtle else look.text
+    Row(verticalAlignment = Alignment.Bottom) {
+        if (g.charging && showBolt) {
+            Image(
+                ImageProvider(R.drawable.ic_bolt), "Charging",
+                GlanceModifier.size((size * 0.62f).dp).padding(bottom = (size * 0.16f).dp),
+                colorFilter = ColorFilter.tint(ColorProvider(Charge)),
+            )
+        }
+        Text(g.level?.toString() ?: "—", style = TextStyle(color = color, fontSize = size.sp, fontWeight = weight))
+        if (g.level != null) {
+            Text(
+                "%",
+                modifier = GlanceModifier.padding(bottom = (size * 0.09f).dp),
+                style = TextStyle(color = color, fontSize = (size * 0.6f).sp, fontWeight = FontWeight.Medium),
+            )
+        }
+    }
+}
+
+/** Ring with the device icon in the middle. */
+@Composable
+private fun RingIcon(g: Gauge, ringDp: Dp, look: WidgetLook, iconRatio: Float = 0.4f) {
     val context = LocalContext.current
     val bmp = GaugeRenderer.ring(context, ringDp.value, g.level, g.charging, g.stale, look.accent)
     Box(GlanceModifier.size(ringDp), contentAlignment = Alignment.Center) {
         Image(ImageProvider(bmp), contentDescription = null, modifier = GlanceModifier.size(ringDp))
         Image(
-            ImageProvider(if (g.charging) R.drawable.ic_bolt else g.icon),
-            contentDescription = g.label,
-            modifier = GlanceModifier.size(ringDp * iconRatio),
-            colorFilter = ColorFilter.tint(if (g.charging) ColorProvider(Color(BatteryPalette.CHARGE_A)) else look.text),
+            ImageProvider(g.icon), g.label,
+            GlanceModifier.size(ringDp * iconRatio),
+            colorFilter = ColorFilter.tint(if (g.stale) look.subtle else look.text),
         )
     }
 }
 
-private fun pct(level: Int?) = level?.let { "$it%" } ?: "—"
-
-/** 2×1 / 4×1: compact pills. */
+/** 2×1 / 4×1: ring + number pairs. */
 @Composable
 private fun StripLayout(gauges: List<Gauge>, look: WidgetLook) {
     val size = LocalSize.current
-    val count = ((size.width.value - 8) / 74).toInt().coerceIn(1, 6)
+    val count = ((size.width.value - 8) / 80).toInt().coerceIn(1, 6)
+    val ring = (size.height.value - 18).coerceIn(28f, 36f).dp
     Row(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
         gauges.take(count).forEach { g ->
             Row(
@@ -215,27 +234,29 @@ private fun StripLayout(gauges: List<Gauge>, look: WidgetLook) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                RingIcon(g, 32.dp, look, iconRatio = 0.46f)
+                RingIcon(g, ring, look, iconRatio = 0.44f)
                 Spacer(GlanceModifier.width(6.dp))
-                Text(pct(g.level), style = TextStyle(color = if (g.stale) look.subtle else look.text, fontSize = 14.sp, fontWeight = FontWeight.Bold))
+                // The ring's glow already says "charging" here; the bolt would crowd the number.
+                Percent(g, 15f, look, showBolt = false)
             }
         }
     }
 }
 
-/** 2×2: up to four rings, or two big rows when there is room. */
+/** 2×2: one or two big rows, or a 2×2 grid of rings. */
 @Composable
 private fun SquareLayout(gauges: List<Gauge>, look: WidgetLook) {
     val size = LocalSize.current
     val shown = gauges.take(4)
     if (shown.size <= 2) {
+        val ring = ((size.height.value - 28) / 2 - 10).coerceIn(34f, 56f).dp
         Column(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             shown.forEach { g ->
                 Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
-                    RingIcon(g, 40.dp, look)
+                    RingIcon(g, ring, look)
                     Spacer(GlanceModifier.width(10.dp))
                     Column {
-                        Text(pct(g.level), style = TextStyle(color = if (g.stale) look.subtle else look.text, fontSize = 20.sp, fontWeight = FontWeight.Bold))
+                        Percent(g, 22f, look)
                         Text(g.label, style = TextStyle(color = look.subtle, fontSize = 11.sp), maxLines = 1)
                     }
                 }
@@ -243,14 +264,26 @@ private fun SquareLayout(gauges: List<Gauge>, look: WidgetLook) {
         }
         return
     }
-    val cell = minOf(size.width.value, size.height.value) / 2f - 6f
-    val ring = cell.coerceIn(36f, 64f).dp
+    val cellW = (size.width.value - 28) / 2
+    val cellH = (size.height.value - 28) / 2
+    val roomy = cellH >= 66
+    val ring = (if (roomy) minOf(cellW - 8, cellH - 22) else minOf(cellW, cellH) - 4).coerceIn(34f, 76f).dp
     Column(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
         shown.chunked(2).forEach { pair ->
             Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
                 pair.forEach { g ->
-                    Box(GlanceModifier.defaultWeight().fillMaxHeight(), contentAlignment = Alignment.Center) {
-                        RingWithNumber(g, ring, look)
+                    Column(
+                        GlanceModifier.defaultWeight().fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (roomy) {
+                            RingIcon(g, ring, look)
+                            Spacer(GlanceModifier.height(4.dp))
+                            Percent(g, 13f, look, FontWeight.Bold)
+                        } else {
+                            RingWithNumber(g, ring, look)
+                        }
                     }
                 }
                 if (pair.size == 1) Spacer(GlanceModifier.defaultWeight())
@@ -259,19 +292,15 @@ private fun SquareLayout(gauges: List<Gauge>, look: WidgetLook) {
     }
 }
 
-/** Small icon above the percentage, both inside the ring. */
+/** Tiny 2×2 cells: icon over the number, both inside the ring. */
 @Composable
 private fun RingWithNumber(g: Gauge, ringDp: Dp, look: WidgetLook) {
     val context = LocalContext.current
-    val bmp = GaugeRenderer.ring(context, ringDp.value, g.level, g.charging, g.stale, look.accent, strokeRatio = 0.085f)
+    val bmp = GaugeRenderer.ring(context, ringDp.value, g.level, g.charging, g.stale, look.accent, strokeRatio = 0.09f)
     Box(GlanceModifier.size(ringDp), contentAlignment = Alignment.Center) {
         Image(ImageProvider(bmp), null, GlanceModifier.size(ringDp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(
-                ImageProvider(if (g.charging) R.drawable.ic_bolt else g.icon), g.label,
-                GlanceModifier.size(ringDp * 0.26f),
-                colorFilter = ColorFilter.tint(if (g.charging) ColorProvider(Color(BatteryPalette.CHARGE_A)) else look.text),
-            )
+            Image(ImageProvider(g.icon), g.label, GlanceModifier.size(ringDp * 0.26f), colorFilter = ColorFilter.tint(look.text))
             Text(
                 g.level?.toString() ?: "—",
                 style = TextStyle(color = if (g.stale) look.subtle else look.text, fontSize = (ringDp.value * 0.24f).sp, fontWeight = FontWeight.Bold),
@@ -280,107 +309,90 @@ private fun RingWithNumber(g: Gauge, ringDp: Dp, look: WidgetLook) {
     }
 }
 
-/** 4×2: a row of rings with numbers and labels underneath. */
+/** 4×2: a row of rings with the number and name underneath. */
 @Composable
-private fun RingsLayout(gauges: List<Gauge>, snapshot: Snapshot, look: WidgetLook) {
+private fun RingsLayout(gauges: List<Gauge>, look: WidgetLook) {
     val size = LocalSize.current
-    val showHeader = size.height >= 140.dp
-    val maxCount = ((size.width.value) / 64).toInt().coerceIn(2, 6)
+    val maxCount = (size.width.value / 70).toInt().coerceIn(2, 6)
     val shown = gauges.take(maxCount)
-    val colW = size.width.value / shown.size.coerceAtLeast(1)
-    val availH = size.height.value - (if (showHeader) 30 else 0) - 40
-    val ring = minOf(colW - 10f, availH).coerceIn(34f, 64f).dp
+    val colW = (size.width.value - 28) / shown.size.coerceAtLeast(1)
+    val ring = minOf(colW - 16f, size.height.value - 28 - 44).coerceIn(36f, 76f).dp
 
-    Column(GlanceModifier.fillMaxSize()) {
-        if (showHeader) Header(snapshot, look)
-        Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
-            shown.forEach { g ->
-                Column(GlanceModifier.defaultWeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    RingIcon(g, ring, look)
-                    Spacer(GlanceModifier.height(6.dp))
-                    Text(pct(g.level), style = TextStyle(color = if (g.stale) look.subtle else look.text, fontSize = 14.sp, fontWeight = FontWeight.Bold))
-                    Text(g.label, style = TextStyle(color = look.subtle, fontSize = 10.sp, textAlign = TextAlign.Center), maxLines = 1)
-                }
+    Row(GlanceModifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+        shown.forEach { g ->
+            Column(GlanceModifier.defaultWeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                RingIcon(g, ring, look)
+                Spacer(GlanceModifier.height(8.dp))
+                Percent(g, 16f, look)
+                Text(g.label, style = TextStyle(color = look.subtle, fontSize = 11.sp, textAlign = TextAlign.Center), maxLines = 1)
             }
         }
     }
 }
 
+/** 4×3 and up: one row per device, no inner cards. */
 @Composable
-private fun Header(snapshot: Snapshot, look: WidgetLook) {
-    Row(GlanceModifier.fillMaxWidth().padding(start = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(GlanceModifier.defaultWeight()) {
-            Text("Battery", style = TextStyle(color = look.text, fontSize = 15.sp, fontWeight = FontWeight.Bold))
-            if (snapshot.updatedAt > 0) {
-                Text("Updated ${WidgetModel.ago(snapshot.updatedAt)}", style = TextStyle(color = look.subtle, fontSize = 10.sp))
-            }
-        }
-        Box(
-            GlanceModifier.size(30.dp).background(look.tile).cornerRadius(15.dp).clickable(actionRunCallback<RefreshAction>()),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(ImageProvider(R.drawable.ic_refresh), "Refresh", GlanceModifier.size(16.dp), colorFilter = ColorFilter.tint(look.text))
-        }
-    }
-}
-
-/** 4×3 and up: a stack of glass tiles, one per device, as many as fit. */
-@Composable
-private fun ListLayout(rows: List<DeviceRow>, snapshot: Snapshot, look: WidgetLook) {
+private fun ListLayout(rows: List<DeviceRow>, look: WidgetLook) {
     val size = LocalSize.current
-    val tileInner = size.width.value - 24 - 24
-    val fits = ((size.height.value - 24 - 50) / 66f).toInt().coerceAtLeast(1)
+    val inner = size.width.value - 28
+    val fits = ((size.height.value - 28 - 34) / 62f).toInt().coerceAtLeast(1)
     Column(GlanceModifier.fillMaxSize()) {
-        Header(snapshot, look)
-        rows.take(fits).forEach { row ->
-            Column(GlanceModifier.fillMaxWidth().padding(bottom = 6.dp)) {
-                DeviceTile(row, tileInner, look)
+        Row(GlanceModifier.fillMaxWidth().padding(start = 2.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Bluetooth battery", modifier = GlanceModifier.defaultWeight(),
+                style = TextStyle(color = look.subtle, fontSize = 13.sp, fontWeight = FontWeight.Medium),
+            )
+            Box(
+                GlanceModifier.size(28.dp).background(look.chip).clickable(actionRunCallback<RefreshAction>()),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(ImageProvider(R.drawable.ic_refresh), "Refresh", GlanceModifier.size(16.dp), colorFilter = ColorFilter.tint(look.text))
             }
+        }
+        rows.take(fits).forEach { row ->
+            DeviceLine(row, inner, look)
+            Spacer(GlanceModifier.height(14.dp))
         }
     }
 }
 
 @Composable
-private fun DeviceTile(row: DeviceRow, innerWidth: Float, look: WidgetLook) {
+private fun DeviceLine(row: DeviceRow, innerWidth: Float, look: WidgetLook) {
     val context = LocalContext.current
-    Row(
-        GlanceModifier.fillMaxWidth().background(look.tile).cornerRadius(20.dp).padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Row(GlanceModifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(GlanceModifier.size(40.dp).background(look.chip), contentAlignment = Alignment.Center) {
+            Image(ImageProvider(row.icon), null, GlanceModifier.size(21.dp), colorFilter = ColorFilter.tint(if (row.connected) look.text else look.subtle))
+        }
+        Spacer(GlanceModifier.width(12.dp))
         if (row.gauges.size > 1) {
             Column(GlanceModifier.defaultWeight()) {
-                TileTitle(row, look)
+                Text(row.title, style = TextStyle(color = look.text, fontSize = 14.sp, fontWeight = FontWeight.Medium), maxLines = 1)
+                Text(row.status, style = TextStyle(color = look.subtle, fontSize = 11.sp), maxLines = 1)
             }
             row.gauges.forEach { g ->
-                Column(GlanceModifier.padding(start = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    RingIcon(g, 30.dp, look, iconRatio = 0.46f)
-                    Text(pct(g.level), style = TextStyle(color = if (g.stale) look.subtle else look.text, fontSize = 11.sp, fontWeight = FontWeight.Bold))
+                Column(GlanceModifier.padding(start = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    RingIcon(g, 30.dp, look, iconRatio = 0.5f)
+                    Percent(g, 11f, look, FontWeight.Bold)
                 }
             }
         } else {
             val g = row.gauges.first()
-            RingIcon(g, 34.dp, look, iconRatio = 0.46f)
-            Spacer(GlanceModifier.width(10.dp))
             Column(GlanceModifier.defaultWeight()) {
-                TileTitle(row, look)
-                val barW = (innerWidth - 34 - 10 - 52).coerceAtLeast(40f)
+                Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                    Column(GlanceModifier.defaultWeight()) {
+                        Text(row.title, style = TextStyle(color = look.text, fontSize = 14.sp, fontWeight = FontWeight.Medium), maxLines = 1)
+                        Text(row.status, style = TextStyle(color = look.subtle, fontSize = 11.sp), maxLines = 1)
+                    }
+                    Percent(g, 18f, look)
+                }
+                Spacer(GlanceModifier.height(5.dp))
+                val barW = (innerWidth - 40 - 12).coerceAtLeast(40f)
                 Image(
-                    ImageProvider(GaugeRenderer.capsule(context, barW, 10f, g.level, g.charging, g.stale, look.accent)),
+                    ImageProvider(GaugeRenderer.capsule(context, barW, 7f, g.level, g.charging, g.stale, look.accent)),
                     null,
-                    GlanceModifier.width(barW.dp).height(13.dp).padding(top = 3.dp),
+                    GlanceModifier.width(barW.dp).height(7.dp),
                 )
             }
-            Text(
-                pct(g.level),
-                modifier = GlanceModifier.width(52.dp),
-                style = TextStyle(color = if (g.stale) look.subtle else look.text, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End),
-            )
         }
     }
-}
-
-@Composable
-private fun TileTitle(row: DeviceRow, look: WidgetLook) {
-    Text(row.title, style = TextStyle(color = look.text, fontSize = 13.sp, fontWeight = FontWeight.Medium), maxLines = 1)
-    Text(row.status, style = TextStyle(color = look.subtle, fontSize = 10.sp), maxLines = 1)
 }

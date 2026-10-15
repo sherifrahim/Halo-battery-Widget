@@ -67,7 +67,7 @@ data class Snapshot(
 
 enum class ThemeMode(val label: String) { SYSTEM("Auto"), LIGHT("Light"), DARK("Dark") }
 enum class SurfaceStyle(val label: String) { GLASS("Glass"), SOLID("Solid") }
-enum class AccentStyle(val label: String) { FLUID("Fluid"), WALLPAPER("Wallpaper"), MONO("Mono") }
+enum class AccentStyle(val label: String) { FLUID("Green"), WALLPAPER("Wallpaper"), MONO("Mono") }
 
 data class Settings(
     val theme: ThemeMode = ThemeMode.SYSTEM,

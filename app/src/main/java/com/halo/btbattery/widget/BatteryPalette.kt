@@ -5,35 +5,32 @@ import android.os.Build
 import com.halo.btbattery.model.AccentStyle
 
 /**
- * Level colours, shared by the widget and the app. Healthy batteries glow mint→aqua in the
- * Fluid style; low and critical switch to amber and coral whatever the accent.
+ * Level colours, shared by widget and app. Solid system tones (each as a light→base pair for a
+ * subtle gloss), not neon: green while healthy or charging, amber at 20 %, red at 10 %.
  */
 object BatteryPalette {
-    const val MINT = 0xFF2FE6A6.toInt()
-    const val AQUA = 0xFF2BC8FF.toInt()
-    const val CHARGE_A = 0xFF3BEA7C.toInt()
-    const val CHARGE_B = 0xFF2FE6A6.toInt()
-    const val AMBER_A = 0xFFFFC145.toInt()
-    const val AMBER_B = 0xFFFF8A3D.toInt()
-    const val CORAL_A = 0xFFFF6A5F.toInt()
-    const val CORAL_B = 0xFFFF3B6B.toInt()
-    const val UNKNOWN = 0xFF8E939E.toInt()
+    const val GREEN_A = 0xFF52DB8C.toInt()
+    const val GREEN_B = 0xFF22C063.toInt()
+    const val AMBER_A = 0xFFFFBE4D.toInt()
+    const val AMBER_B = 0xFFFF9500.toInt()
+    const val RED_A = 0xFFFF7A70.toInt()
+    const val RED_B = 0xFFFF3B30.toInt()
+    const val UNKNOWN = 0xFFA0A4AB.toInt()
 
-    /** Gradient start/end for a level. */
     fun gradient(context: Context, level: Int?, charging: Boolean, accent: AccentStyle): Pair<Int, Int> = when {
         level == null -> UNKNOWN to UNKNOWN
-        charging -> CHARGE_A to CHARGE_B
-        level <= 10 -> CORAL_A to CORAL_B
+        charging -> GREEN_A to GREEN_B
+        level <= 10 -> RED_A to RED_B
         level <= 20 -> AMBER_A to AMBER_B
         else -> healthy(context, accent)
     }
 
     fun healthy(context: Context, accent: AccentStyle): Pair<Int, Int> = when (accent) {
-        AccentStyle.FLUID -> MINT to AQUA
-        AccentStyle.MONO -> 0xFF9AA0AB.toInt() to 0xFFC9CDD4.toInt()
+        AccentStyle.FLUID -> GREEN_A to GREEN_B
+        AccentStyle.MONO -> 0xFFA7ABB2.toInt() to 0xFF7D828B.toInt()
         AccentStyle.WALLPAPER ->
             if (Build.VERSION.SDK_INT >= 31) {
-                context.getColor(android.R.color.system_accent1_300) to context.getColor(android.R.color.system_accent3_300)
-            } else MINT to AQUA
+                context.getColor(android.R.color.system_accent1_300) to context.getColor(android.R.color.system_accent1_500)
+            } else GREEN_A to GREEN_B
     }
 }

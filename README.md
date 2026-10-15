@@ -1,15 +1,25 @@
 # Halo: Bluetooth battery widget
 
-A clean, glassy Android widget + app that shows the battery of your connected Bluetooth gear:
-earbuds (**left, right and case separately**), headphones, speakers, watches, keyboards, mice and
-controllers. Car head units are filtered out. The styling follows ColorOS 17's *Fluid Fusion*
-look: translucent glass surfaces, soft colour blooms, glowing gauges, continuous ("G2") rounded
-corners, springy press feedback and a floating-island tab bar.
+An Android widget + app that shows the battery of your connected Bluetooth gear: earbuds
+(**left, right and case separately**), headphones, speakers, watches, keyboards, mice and
+controllers. Car head units are filtered out.
 
-![widget](dist/previews/widget_4x2_dark.png)
+Designed to sit natively on ColorOS 17: a neutral canvas with one restrained accent,
+translucent cards lit from above (bright top hairline, soft bottom reflection, faint base
+shadow), a light bloom where your finger presses, fully circular controls, capsule buttons, a
+floating tab bar, bold battery bars, and the system font (OPPO Sans on ColorOS). Glow is
+reserved for charging.
+
+| Widget 4×2 | Widget 4×4 | Widget 2×2 |
+|---|---|---|
+| ![](dist/previews/widget_4x2_dark.png) | ![](dist/previews/widget_4x4_light.png) | ![](dist/previews/widget_2x2_light.png) |
+
+| App | App (dark) | Style |
+|---|---|---|
+| ![](dist/previews/app_light.png) | ![](dist/previews/app_dark.png) | ![](dist/previews/style_light.png) |
 
 ## Install
-`dist/Halo-1.0.0.apk`: sideload it (allow "Install unknown apps"). Open Halo once, grant
+`dist/Halo-1.1.0.apk`: sideload it (allow "Install unknown apps"). Open Halo once, grant
 **Nearby devices**, then long-press the home screen → Widgets → Halo (or tap *Place on home screen*
 in the Style tab).
 
@@ -49,6 +59,8 @@ pause it.
 ```
 The release build is signed with the debug key so it installs directly. Add your own
 `signingConfig` before publishing.
+
+Icons: [Material Symbols Rounded](https://github.com/google/material-design-icons) (Apache 2.0).
 
 ## Limits worth knowing
 * Samsung Galaxy Buds and some brand-only earbuds use private protocols. They show the single

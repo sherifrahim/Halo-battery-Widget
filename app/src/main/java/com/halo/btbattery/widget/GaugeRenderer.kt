@@ -14,7 +14,7 @@ import kotlin.math.roundToInt
 
 /**
  * App widgets can't draw arcs or gradients, so rings and capsules are painted into bitmaps.
- * Each gets a soft outer glow, the "luminous" edge from the Fluid Fusion look.
+ * Solid level colour with a faint light→base sweep; a soft halo only while charging.
  */
 object GaugeRenderer {
 
@@ -25,21 +25,21 @@ object GaugeRenderer {
         charging: Boolean,
         stale: Boolean,
         accent: AccentStyle,
-        strokeRatio: Float = 0.105f,
+        strokeRatio: Float = 0.12f,
     ): Bitmap {
         val density = context.resources.displayMetrics.density
         val px = (sizeDp * density).roundToInt().coerceIn(24, 360)
         val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
         val stroke = px * strokeRatio
-        val inset = stroke / 2f + stroke * 0.55f // leave room for the glow
+        val inset = stroke / 2f + stroke * 0.5f // same room for every ring so sizes match
         val rect = RectF(inset, inset, px - inset, px - inset)
         val (c1, c2) = BatteryPalette.gradient(context, level, charging, accent)
 
         val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = stroke
-            color = withAlpha(c1, 0x30)
+            color = withAlpha(c2, 0x29)
         }
         canvas.drawOval(rect, track)
 
@@ -47,23 +47,25 @@ object GaugeRenderer {
             val sweep = 360f * level.coerceIn(0, 100) / 100f
             val cx = px / 2f
             val radius = rect.width() / 2f
-            // Rotate the gradient back by the round cap so the cap isn't painted with the end colour.
+            // Start the gradient a cap-width early so the round start cap keeps the start colour.
             val capDegrees = Math.toDegrees((stroke / 2f / radius).toDouble()).toFloat()
-            val shader = SweepGradient(cx, cx, intArrayOf(c1, c2, c2), floatArrayOf(0f, (sweep / 360f).coerceAtLeast(0.01f), 1f))
+            val end = ((sweep + capDegrees) / 360f).coerceIn(0.02f, 1f)
+            val shader = SweepGradient(cx, cx, intArrayOf(c1, c2, c2), floatArrayOf(0f, end, 1f))
                 .apply { setLocalMatrix(Matrix().apply { setRotate(-90f - capDegrees, cx, cx) }) }
             val arc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = stroke
                 strokeCap = Paint.Cap.ROUND
                 this.shader = shader
-                if (!stale) setShadowLayer(stroke * 0.55f, 0f, 0f, withAlpha(c2, 0x8C))
-                if (stale) alpha = 0x70
+                if (charging && !stale) setShadowLayer(stroke * 0.5f, 0f, 0f, withAlpha(c2, 0x80))
+                if (stale) alpha = 0x6B
             }
             canvas.drawArc(rect, -90f, sweep, false, arc)
         }
         return bmp
     }
 
+    /** Thick capsule bar with a glossy top sheen. */
     fun capsule(
         context: Context,
         widthDp: Float,
@@ -79,22 +81,30 @@ object GaugeRenderer {
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
         val pad = h * 0.18f
-        val barH = h - pad * 2
-        val r = barH / 2f
+        val top = pad
+        val bottom = h - pad
+        val r = (bottom - top) / 2f
         val (c1, c2) = BatteryPalette.gradient(context, level, charging, accent)
 
-        val track = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = withAlpha(c1, 0x2A) }
-        canvas.drawRoundRect(RectF(pad, pad, w - pad, h - pad), r, r, track)
+        canvas.drawRoundRect(RectF(pad, top, w - pad, bottom), r, r, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = withAlpha(c2, 0x24) })
 
         if (level != null && level > 0) {
             val full = w - pad * 2
-            val fillW = (full * level.coerceIn(0, 100) / 100f).coerceAtLeast(barH)
-            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                shader = LinearGradient(pad, 0f, pad + fillW, 0f, c1, c2, Shader.TileMode.CLAMP)
-                if (!stale) setShadowLayer(pad * 0.9f, 0f, 0f, withAlpha(c2, 0x80))
-                if (stale) alpha = 0x70
-            }
-            canvas.drawRoundRect(RectF(pad, pad, pad + fillW, h - pad), r, r, fill)
+            val fillW = (full * level.coerceIn(0, 100) / 100f).coerceAtLeast(bottom - top)
+            val bar = RectF(pad, top, pad + fillW, bottom)
+            canvas.drawRoundRect(bar, r, r, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader = LinearGradient(0f, top, 0f, bottom, c1, c2, Shader.TileMode.CLAMP)
+                if (charging && !stale) setShadowLayer(pad * 0.9f, 0f, 0f, withAlpha(c2, 0x80))
+                if (stale) alpha = 0x6B
+            })
+            // Gloss: a thin bright band across the top half.
+            if (!stale) canvas.drawRoundRect(
+                RectF(bar.left + r * 0.6f, top + (bottom - top) * 0.12f, bar.right - r * 0.6f, top + (bottom - top) * 0.45f),
+                r, r,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = LinearGradient(0f, top, 0f, top + (bottom - top) * 0.45f, 0x59FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP)
+                },
+            )
         }
         return bmp
     }

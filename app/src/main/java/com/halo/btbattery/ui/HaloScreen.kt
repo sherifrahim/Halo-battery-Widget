@@ -6,12 +6,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -24,8 +27,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -44,10 +47,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.halo.btbattery.R
-import com.halo.btbattery.ui.components.FluidBackdrop
-import com.halo.btbattery.ui.components.SmoothShape
+import com.halo.btbattery.ui.components.AmbientBackdrop
 import com.halo.btbattery.ui.components.bouncy
+import com.halo.btbattery.ui.theme.LocalAccent
 import com.halo.btbattery.ui.theme.LocalTones
 import kotlinx.coroutines.launch
 
@@ -77,66 +81,57 @@ fun rememberPhoneBattery(): PhoneBattery? {
 
 private data class Tab(val label: String, @DrawableRes val icon: Int)
 
-private val tabs = listOf(Tab("Devices", R.drawable.ic_earbuds), Tab("Style", R.drawable.ic_tune))
+private val tabs = listOf(Tab("Devices", R.drawable.ic_earbuds), Tab("Style", R.drawable.ic_palette))
 
 @Composable
 fun HaloScreen(vm: MainViewModel) {
     val pager = rememberPagerState(pageCount = { tabs.size })
     val scope = rememberCoroutineScope()
     Box(Modifier.fillMaxSize()) {
-        FluidBackdrop()
+        AmbientBackdrop()
         HorizontalPager(pager, Modifier.fillMaxSize()) { page ->
             when (page) {
                 0 -> DevicesScreen(vm)
                 else -> StyleScreen(vm)
             }
         }
-        FloatingIsland(
+        FloatingTabBar(
             selected = pager.currentPage,
             onSelect = { scope.launch { pager.animateScrollToPage(it) } },
-            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 14.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 12.dp),
         )
     }
 }
 
-/** ColorOS-style floating island: a glass capsule whose highlight glides to the chosen tab. */
+/** Floating, translucent capsule tab bar; the selection lozenge glides between tabs on a spring. */
 @Composable
-private fun FloatingIsland(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+private fun FloatingTabBar(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val t = LocalTones.current
-    val itemW = 116.dp
-    val shape = SmoothShape(30.dp)
-    val x by animateDpAsState(
-        targetValue = itemW * selected,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow),
-        label = "island",
-    )
+    val accent = LocalAccent.current
+    val itemW = 92.dp
+    val x by animateDpAsState(itemW * selected, spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessMediumLow), label = "tab")
     Box(
         modifier
-            .shadow(24.dp, shape, ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.25f))
-            .clip(shape)
-            .background(if (t.dark) Color(0xCC1A1D24) else Color(0xE6FFFFFF))
-            .border(1.dp, Brush.verticalGradient(listOf(t.edgeTop, t.edgeBottom)), shape)
-            .padding(6.dp)
-            .height(48.dp)
+            .shadow(18.dp, CircleShape, ambientColor = Color(0x22000000), spotColor = Color(0x2E000000))
+            .clip(CircleShape)
+            .background(t.bar)
+            .border(1.dp, Brush.verticalGradient(listOf(t.edgeTop, t.edgeBottom)), CircleShape)
+            .padding(4.dp)
+            .height(56.dp)
             .width(itemW * tabs.size),
     ) {
-        Box(Modifier.offset(x = x).width(itemW).fillMaxHeight().clip(SmoothShape(24.dp)).background(t.glassStrong))
+        Box(Modifier.offset(x = x).width(itemW).fillMaxHeight().clip(CircleShape).background(accent.copy(alpha = if (t.dark) 0.18f else 0.12f)))
         Row {
             tabs.forEachIndexed { i, tab ->
-                val active = i == selected
-                Row(
-                    Modifier.width(itemW).fillMaxHeight().bouncy { onSelect(i) },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                val color by animateColorAsState(if (i == selected) accent else t.inkSoft, label = "tint")
+                Column(
+                    Modifier.width(itemW).fillMaxHeight().bouncy(pressedScale = 0.88f) { onSelect(i) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    Icon(painterResource(tab.icon), null, Modifier.size(20.dp), tint = if (active) t.ink else t.inkSoft)
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        tab.label,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
-                        color = if (active) t.ink else t.inkSoft,
-                    )
+                    Icon(painterResource(tab.icon), null, Modifier.size(22.dp), tint = color)
+                    Spacer(Modifier.height(2.dp))
+                    Text(tab.label, fontSize = 11.sp, fontWeight = if (i == selected) FontWeight.Medium else FontWeight.Normal, color = color)
                 }
             }
         }

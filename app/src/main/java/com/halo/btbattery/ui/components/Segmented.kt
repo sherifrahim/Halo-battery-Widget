@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,39 +23,36 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.halo.btbattery.ui.theme.LocalTones
 
-/** Capsule segmented control whose thumb glides between options on a spring. */
+/** Capsule segmented control; the raised thumb glides between options on a spring. */
 @Composable
 fun <T> Segmented(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
     val t = LocalTones.current
-    val shape = SmoothShape(18.dp)
-    BoxWithConstraints(
-        modifier.fillMaxWidth().height(44.dp).clip(shape).background(t.glass).padding(4.dp),
-    ) {
+    BoxWithConstraints(modifier.fillMaxWidth().height(40.dp).clip(CircleShape).background(t.well).padding(3.dp)) {
         val segment = maxWidth / options.size
         val index = options.indexOf(selected).coerceAtLeast(0)
-        val x by animateDpAsState(
-            targetValue = segment * index,
-            animationSpec = spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessMediumLow),
-            label = "thumb",
+        val x by animateDpAsState(segment * index, spring(dampingRatio = 0.68f, stiffness = Spring.StiffnessMediumLow), label = "thumb")
+        Box(
+            Modifier.offset(x = x).width(segment).fillMaxHeight()
+                .shadow(if (t.dark) 0.dp else 3.dp, CircleShape, ambientColor = Color(0x14000000), spotColor = Color(0x1F000000))
+                .clip(CircleShape).background(t.raised),
         )
-        Box(Modifier.offset(x = x).width(segment).fillMaxHeight().clip(SmoothShape(14.dp)).background(t.glassStrong))
         Row(Modifier.fillMaxWidth().fillMaxHeight()) {
             options.forEach { option ->
                 Box(
-                    Modifier.weight(1f).fillMaxHeight().clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { onSelect(option) },
+                    Modifier.weight(1f).fillMaxHeight()
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onSelect(option) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        label(option),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (option == selected) FontWeight.SemiBold else FontWeight.Medium,
+                        label(option), fontSize = 13.sp,
+                        fontWeight = if (option == selected) FontWeight.Medium else FontWeight.Normal,
                         color = if (option == selected) t.ink else t.inkSoft,
                     )
                 }

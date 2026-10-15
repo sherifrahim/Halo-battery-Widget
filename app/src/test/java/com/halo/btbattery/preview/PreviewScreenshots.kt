@@ -52,9 +52,9 @@ class PreviewScreenshots {
         runBlocking { HaloStore.get(app).saveSnapshot(SampleData.snapshot) }
     }
 
-    private fun app(theme: ThemeMode, name: String) {
+    private fun app(theme: ThemeMode, name: String, page: Int = 0) {
         val vm = MainViewModel(app)
-        compose.setContent { HaloTheme(theme) { HaloScreen(vm) } }
+        compose.setContent { HaloTheme(theme) { if (page == 0) HaloScreen(vm) else androidx.compose.foundation.layout.Box { com.halo.btbattery.ui.components.AmbientBackdrop(); com.halo.btbattery.ui.StyleScreen(vm) } } }
         compose.mainClock.advanceTimeBy(2_000)
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("$OUT/$name.png")
@@ -62,6 +62,8 @@ class PreviewScreenshots {
 
     @Test fun appDark() = app(ThemeMode.DARK, "app_dark")
     @Test @Config(qualifiers = "w400dp-h880dp-notnight-xxhdpi") fun appLight() = app(ThemeMode.LIGHT, "app_light")
+    @Test @Config(qualifiers = "w400dp-h880dp-notnight-xxhdpi") fun styleLight() = app(ThemeMode.LIGHT, "style_light", page = 1)
+    @Test fun styleDark() = app(ThemeMode.DARK, "style_dark", page = 1)
 
     @OptIn(ExperimentalGlanceRemoteViewsApi::class)
     private fun widget(size: DpSize, theme: ThemeMode, name: String): Unit = runBlocking {
@@ -88,7 +90,21 @@ class PreviewScreenshots {
         Unit
     }
 
+    @Test fun launcherIcon() {
+        val d = androidx.core.content.res.ResourcesCompat.getDrawable(app.resources, com.halo.btbattery.R.mipmap.ic_launcher, null)!!
+        val bmp = android.graphics.Bitmap.createBitmap(432, 432, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(bmp)
+        // Mask like a launcher would: a rounded square.
+        val path = android.graphics.Path().apply { addRoundRect(0f, 0f, 432f, 432f, 110f, 110f, android.graphics.Path.Direction.CW) }
+        c.clipPath(path)
+        d.setBounds(0, 0, 432, 432)
+        d.draw(c)
+        java.io.File(OUT).mkdirs()
+        java.io.FileOutputStream("$OUT/launcher_icon.png").use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
     @Test fun widget2x2Dark() = widget(DpSize(170.dp, 170.dp), ThemeMode.DARK, "widget_2x2_dark")
+    @Test fun widget2x2Light() = widget(DpSize(170.dp, 170.dp), ThemeMode.LIGHT, "widget_2x2_light")
     @Test fun widget4x1Dark() = widget(DpSize(340.dp, 80.dp), ThemeMode.DARK, "widget_4x1_dark")
     @Test fun widget4x2Dark() = widget(DpSize(340.dp, 170.dp), ThemeMode.DARK, "widget_4x2_dark")
     @Test fun widget4x2Light() = widget(DpSize(340.dp, 170.dp), ThemeMode.LIGHT, "widget_4x2_light")
